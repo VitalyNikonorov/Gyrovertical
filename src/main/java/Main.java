@@ -1,3 +1,6 @@
+import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
+import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
+import core.App;
 import jssc.SerialPort;
 import jssc.SerialPortException;
 import org.jfree.chart.ChartFactory;
@@ -17,10 +20,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -40,6 +40,7 @@ public class Main {
     public JLabel pitchLabel;
     public JLabel rollLabel;
     private JButton saveBtn;
+    private JButton threeDBtn;
     private JFreeChart pitchChart;
     private JFreeChart rollChart;
     private static SerialPort serialPort;
@@ -150,11 +151,13 @@ public class Main {
             public void actionPerformed(ActionEvent e) {
                 String directory = System.getProperty("user.dir");
                 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd G 'в' HH:mm:ss z");
-                String filename = dateFormat.format( new Date() );
+                String dir = dateFormat.format( new Date() );
 
-                File output = new File(String.format("%s/%s", directory, filename));
+                new File(String.format("%s/%s", directory, dir)).mkdir();
 
-                try(FileOutputStream os = new FileOutputStream(output)) {
+                File outputRaw = new File(String.format("%s/%s/%s", directory, dir, "raw.txt"));
+
+                try(FileOutputStream os = new FileOutputStream(outputRaw)) {
                     os.write(dataList.getText().getBytes());
                     os.flush();
 
@@ -163,6 +166,41 @@ public class Main {
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
+
+                File outputData = new File(String.format("%s/%s/%s", directory, dir, "data.txt"));
+
+                try(FileOutputStream os = new FileOutputStream(outputData)) {
+                    for (int i = 0; i < Math.min(pitchSeries.getItemCount(), rollSeries.getItemCount()); i++) {
+                        os.write(String.format("тангаж:\t%f\tкрен:\t%f\n", pitchSeries.getDataItem(i).getValue(), rollSeries.getDataItem(i).getValue()).getBytes());
+                    }
+                    os.flush();
+
+                } catch (FileNotFoundException ex) {
+                    ex.printStackTrace();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        fileBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent event) {
+
+                JFileChooser fileopen = new JFileChooser();
+                int ret = fileopen.showOpenDialog(null);
+                if (ret == JFileChooser.APPROVE_OPTION) {
+                    File file = fileopen.getSelectedFile();
+                    new Thread(new FileHandler(Main.this, file)).start();
+                }
+
+            }
+        });
+        threeDBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
+                new LwjglApplication(new App(), config);
             }
         });
     }
@@ -188,7 +226,7 @@ public class Main {
         final XYPlot plot = result.getXYPlot();
         ValueAxis axis = plot.getDomainAxis();
         axis.setAutoRange(true);
-        axis.setFixedAutoRange(60000.0);  // 60 seconds
+        axis.setFixedAutoRange(300000.0);  // 60 seconds
         axis = plot.getRangeAxis();
         axis.setRange(-180.0, 180.0);
         return result;

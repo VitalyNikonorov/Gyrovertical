@@ -32,6 +32,7 @@
         </plugins>
     </build>
 
+
     <dependencies>
         <dependency>
             <groupId>org.scream3r</groupId>
@@ -62,6 +63,24 @@
             <artifactId>jfreechart</artifactId>
             <version>1.0.19</version>
         </dependency>
+
+        <!-- http://mvnrepository.com/artifact/com.badlogicgames.gdx/gdx-backend-lwjgl -->
+        <dependency>
+            <groupId>com.badlogicgames.gdx</groupId>
+            <artifactId>gdx-backend-lwjgl</artifactId>
+            <version>1.9.3</version>
+        </dependency>
+
+
+        <!-- http://mvnrepository.com/artifact/com.badlogicgames.gdx/gdx-platform -->
+        <dependency>
+            <groupId>com.badlogicgames.gdx</groupId>
+            <artifactId>gdx-platform</artifactId>
+            <version>1.9.3</version>
+        </dependency>
+
+        <!--compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"-->
+
 
     </dependencies>
 </project>

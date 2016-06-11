@@ -37,6 +37,12 @@ public class OrientationOperator {
     long start;
     boolean isCalibrated = false;
 
+    private double filterT = 0.1;
+    private double tettaLast = 0.0;
+    private double gammaLast = 0.0;
+    private double psyLast = 0.0;
+    private double gainFilter = 1.0;
+
     public OrientationOperator(Main main) {
         matrixD = new double[4][4];
         matrixD[1][1] = 1.0;
@@ -153,6 +159,10 @@ public class OrientationOperator {
             double gamma = -Math.atan(matrixD[3][1] / matrixD[3][3]) / Math.PI * 180.0;
             psy = Math.atan(matrixD[1][2] / matrixD[2][2]) * Math.PI * 180.0;
 
+            tetta = filter(tetta, tettaLast, filterT);
+            gamma = filter(gamma, gammaLast, filterT);
+            psy = filter(psy, psyLast, 10000);
+
             System.out.println(String.format("gamma:\t%f\ttetta\t%f\tpsy:\t%f", gamma, tetta, psy));
             main.pitchLabel.setText(String.format("Тангаж: %f", tetta));
             main.rollLabel.setText(String.format("Крен: %f", gamma));
@@ -160,6 +170,9 @@ public class OrientationOperator {
             main.pitchSeries.addOrUpdate(new Millisecond(), tetta);
             main.rollSeries.addOrUpdate(new Millisecond(), gamma);
 
+            gammaLast = gamma;
+            tettaLast = tetta;
+            psyLast = psy;
         } else {
 
             calibrationCounter++;
@@ -173,6 +186,13 @@ public class OrientationOperator {
 
         }
 
+    }
+
+    private double filter(double value, double lastValue, double filterT){
+        double result;
+        result = ( value * gainFilter * deltaT + lastValue * filterT ) / (filterT + deltaT);
+
+        return result;
     }
 
 }
