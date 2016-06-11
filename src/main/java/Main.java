@@ -17,6 +17,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -138,6 +142,26 @@ public class Main {
                 }
                 catch (SerialPortException ex) {
                     System.out.println(ex);
+                }
+            }
+        });
+
+        saveBtn.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String directory = System.getProperty("user.dir");
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd G 'в' HH:mm:ss z");
+                String filename = dateFormat.format( new Date() );
+
+                File output = new File(String.format("%s/%s", directory, filename));
+
+                try(FileOutputStream os = new FileOutputStream(output)) {
+                    os.write(dataList.getText().getBytes());
+                    os.flush();
+
+                } catch (FileNotFoundException ex) {
+                    ex.printStackTrace();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
                 }
             }
         });
