@@ -3,12 +3,15 @@ import jssc.SerialPortException;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.time.Millisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
+import org.jfree.data.xy.XYDataset;
 
 import javax.swing.*;
 import java.awt.*;
@@ -35,7 +38,6 @@ public class Main {
     private JButton saveBtn;
     private JFreeChart pitchChart;
     private JFreeChart rollChart;
-    private DefaultCategoryDataset data;
     private static SerialPort serialPort;
     private Thread inputHandler;
     public static boolean isReceavingMode = GlobalSettings.STOP;
@@ -45,28 +47,27 @@ public class Main {
     public TimeSeries pitchSeries;
     public TimeSeries rollSeries;
 
+    public TimeSeriesCollection dataPitch;
+    public TimeSeriesCollection dataRoll;
+
 
     public Main() {
-        data = new DefaultCategoryDataset();
-        data.setValue(100, "Amount", "TP");
-        data.setValue(90, "Amount", "TS");
-        data.setValue(41, "Amount", "TT");
 
-//        this.pitchSeries = new TimeSeries("Random Data", Millisecond.class);
-//        final TimeSeriesCollection dataset = new TimeSeriesCollection(this.series);
+        this.pitchSeries = new TimeSeries("Тангаж", Millisecond.class);
+        dataPitch = new TimeSeriesCollection(this.pitchSeries);
 
-        pitchChart = ChartFactory.createAreaChart("Тангаж", "Такты", "Градусы", data, PlotOrientation.VERTICAL, false, false, false);
-        rollChart = ChartFactory.createAreaChart("Крен", "Такты", "Градусы", data, PlotOrientation.VERTICAL, false, false, false);
+        this.rollSeries = new TimeSeries("Крен", Millisecond.class);
+        dataRoll = new TimeSeriesCollection(this.rollSeries);
 
-        CategoryPlot plotPitch = pitchChart.getCategoryPlot();
-        plotPitch.setDomainGridlinePaint(Color.GREEN);
+        pitchChart = createChart(dataPitch, "Тангаж");
+        rollChart = createChart(dataRoll, "Крен");
+
+
         ChartPanel pitchChartPanel = new ChartPanel(pitchChart);
         pitchPanel.removeAll();
         pitchPanel.add(pitchChartPanel, BorderLayout.CENTER);
         pitchPanel.validate();
 
-        CategoryPlot plotRoll = rollChart.getCategoryPlot();
-        plotRoll.setDomainGridlinePaint(Color.GREEN);
         ChartPanel rollChartPanel = new ChartPanel(rollChart);
         rollPanel.removeAll();
         rollPanel.add(rollChartPanel, BorderLayout.CENTER);
@@ -150,6 +151,25 @@ public class Main {
         mainFrame.setVisible(true);
     }
 
+    private JFreeChart createChart(final XYDataset dataset, String title) {
+        final JFreeChart result = ChartFactory.createTimeSeriesChart(
+                title,
+                "время",
+                "градусы",
+                dataset,
+                true,
+                true,
+                false
+        );
+        final XYPlot plot = result.getXYPlot();
+        ValueAxis axis = plot.getDomainAxis();
+        axis.setAutoRange(true);
+        axis.setFixedAutoRange(60000.0);  // 60 seconds
+        axis = plot.getRangeAxis();
+        axis.setRange(-180.0, 180.0);
+        return result;
+    }
+
     private void createUIComponents() {
         // TODO: place custom component creation code here
         listModel = new DefaultListModel();
@@ -157,7 +177,5 @@ public class Main {
 
         dataList = new JTextArea();
         dataList.setRows(10);
-//        dataList.setLineWrap (true);
-
     }
 }

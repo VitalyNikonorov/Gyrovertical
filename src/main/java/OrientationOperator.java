@@ -1,6 +1,7 @@
 /**
  * Created by vitaly on 11.06.16.
  */
+import org.jfree.data.time.Millisecond;
 import org.json.JSONObject;
 
 /**
@@ -155,6 +156,10 @@ public class OrientationOperator {
             System.out.println(String.format("gamma:\t%f\ttetta\t%f\tpsy:\t%f", gamma, tetta, psy));
             main.pitchLabel.setText(String.format("Тангаж: %f", tetta));
             main.rollLabel.setText(String.format("Крен: %f", gamma));
+
+            main.pitchSeries.addOrUpdate(new Millisecond(), tetta);
+            main.rollSeries.addOrUpdate(new Millisecond(), gamma);
+
         } else {
 
             calibrationCounter++;
