@@ -1,16 +1,10 @@
-import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
-import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
-import core.App;
 import jssc.SerialPort;
 import jssc.SerialPortException;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.ValueAxis;
-import org.jfree.chart.plot.CategoryPlot;
-import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.time.Millisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
@@ -47,6 +41,9 @@ public class Main {
     private Thread inputHandler;
     public static boolean isReceavingMode = GlobalSettings.STOP;
     private DefaultListModel listModel;
+
+    public static double pitch = 0.0;
+    public static double roll = 0.0;
 
 
     public TimeSeries pitchSeries;
@@ -199,8 +196,9 @@ public class Main {
         threeDBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
-                new LwjglApplication(new App(), config);
+                new Thread(new AppThread()).start();
+//                LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
+//                new LwjglApplication(new App(), config);
             }
         });
     }

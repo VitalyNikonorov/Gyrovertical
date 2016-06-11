@@ -173,6 +173,9 @@ public class OrientationOperator {
             gammaLast = gamma;
             tettaLast = tetta;
             psyLast = psy;
+
+            Main.pitch = tetta;
+            Main.roll = gamma;
         } else {
 
             calibrationCounter++;
