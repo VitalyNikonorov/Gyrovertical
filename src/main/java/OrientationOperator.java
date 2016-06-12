@@ -37,7 +37,7 @@ public class OrientationOperator {
     long start;
     boolean isCalibrated = false;
 
-    private double filterT = 1.0;
+    private double filterT = 0.5;
     private double tettaLast = 0.0;
     private double gammaLast = 0.0;
     private double psyLast = 0.0;

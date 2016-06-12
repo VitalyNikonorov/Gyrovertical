@@ -25,9 +25,9 @@ public class FileDataOperator {
     double S;
     double psy = 0.0;
 
-    int gx0 = 332;
-    int gy0 = 91;
-    int gz0 = -184;
+    int gx0 = -332;
+    int gy0 = -91;
+    int gz0 = 184;
 
     int calibrationCounter = 0;
 
@@ -59,14 +59,22 @@ public class FileDataOperator {
 
         num++;
 
-        //calibrate
-        double wx = ((jsonObject.getInt("gx") + gx0) / (1 + 0.031)) / constW;
-        double wy = (jsonObject.getInt("gy") + gy0) / (1 + 0.0034) / constW;
-        double wz = (jsonObject.getInt("gz") - gz0) / (1 + 0.013) / constW;
+        int wXR = jsonObject.getInt("gx");
+        int wYR = jsonObject.getInt("gy");
+        int wZR = jsonObject.getInt("gz");
 
-        double ax = ((jsonObject.getInt("ax") - 150) / (1 + 0.0479)) / constG * 9.81; // m/c^2  //547
-        double ay = ((jsonObject.getInt("ay") - 5) / (1 + 0.0022)) / constG * 9.81; // m/c^2
-        double az = ((jsonObject.getInt("az") + 662) / (1 + 0.0217)) / constG * 9.81; // m/c^2
+        //calibrate
+        double wx = (0.9684 * ( wXR - gx0) + 0.0036 * (wYR - gy0) + 0.0299 * (wZR - gz0)) / constW;
+        double wy = (0.9965 * ( wYR - gy0) + 0.0110 * (wXR - gx0) + 0.0046 * (wZR - gz0)) / constW;
+        double wz = (0.9854 * ( wZR - gz0) - 0.0515 * (wXR - gx0) - 0.0304 * (wZR - gz0)) / constW;
+
+        int aXR = jsonObject.getInt("ax");
+        int aYR = jsonObject.getInt("ay");
+        int aZR = jsonObject.getInt("az");
+
+        double ax = (0.9939 * ( aXR - 547.34) - 0.0113 * (aYR - 4.67  ) + 0.0346 * (aZR + 661.95) ) / constG * 9.81; // m/c^2  //547
+        double ay = (0.9977 * ( aYR - 4.67  ) + 0.0110 * (aXR - 547.34) - 0.0056 * (aZR + 661.95) ) / constG * 9.81; // m/c^2
+        double az = (0.9854 * ( aZR + 661.95) - 0.0324 * (aXR - 547.34) - 0.0040 * (aYR - 4.67  ) ) / constG * 9.81; // m/c^2
         //calibrated
 
         //body to local level
