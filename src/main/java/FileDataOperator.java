@@ -37,6 +37,22 @@ public class FileDataOperator {
     int i = 0;
     Millisecond time;
 
+    double lastAX = 0.0;
+    double lastAY = 0.0;
+    double lastAZ = 0.0;
+
+    double lastWX = 0.0;
+    double lastWY = 0.0;
+    double lastWZ = 0.0;
+
+    long gxSum = 0;
+    long gySum = 0;
+    long gzSum = 0;
+
+    long axSum = 0;
+    long aySum = 0;
+    long azSum = 0;
+
     public FileDataOperator(Main main) {
         matrixD = new double[4][4];
         matrixD[1][1] = 1.0;
@@ -59,18 +75,34 @@ public class FileDataOperator {
 
         num++;
 
-        int wXR = jsonObject.getInt("gx");
-        int wYR = jsonObject.getInt("gy");
-        int wZR = jsonObject.getInt("gz");
+        double wXR = jsonObject.getInt("gx");
+        double wYR = jsonObject.getInt("gy");
+        double wZR = jsonObject.getInt("gz");
+
+        wXR = filter(wXR, lastWX, filterT);
+        wYR = filter(wYR, lastWY, filterT);
+        wZR = filter(wZR, lastWZ, filterT);
+
+        lastWX = wXR;
+        lastWY = wYR;
+        lastWZ = wZR;
 
         //calibrate
         double wx = (0.9684 * ( wXR - gx0) + 0.0036 * (wYR - gy0) + 0.0299 * (wZR - gz0)) / constW;
         double wy = (0.9965 * ( wYR - gy0) + 0.0110 * (wXR - gx0) + 0.0046 * (wZR - gz0)) / constW;
         double wz = (0.9854 * ( wZR - gz0) - 0.0515 * (wXR - gx0) - 0.0304 * (wZR - gz0)) / constW;
 
-        int aXR = jsonObject.getInt("ax");
-        int aYR = jsonObject.getInt("ay");
-        int aZR = jsonObject.getInt("az");
+        double aXR = jsonObject.getInt("ax");
+        double aYR = jsonObject.getInt("ay");
+        double aZR = jsonObject.getInt("az");
+
+        aXR = filter(aXR, lastAX, filterT);
+        aYR = filter(aYR, lastAY, filterT);
+        aZR = filter(aZR, lastAZ, filterT);
+
+        lastAX = aXR;
+        lastAY = aYR;
+        lastAZ = aZR;
 
         double ax = (0.9939 * ( aXR - 547.34) - 0.0113 * (aYR - 4.67  ) + 0.0346 * (aZR + 661.95) ) / constG * 9.81; // m/c^2  //547
         double ay = (0.9977 * ( aYR - 4.67  ) + 0.0110 * (aXR - 547.34) - 0.0056 * (aZR + 661.95) ) / constG * 9.81; // m/c^2
@@ -149,23 +181,62 @@ public class FileDataOperator {
         double tetta = Math.atan(matrixD[3][2] / C0) / Math.PI * 180.0;
         double gamma = -Math.atan(matrixD[3][1] / matrixD[3][3]) / Math.PI * 180.0;
 
-        tetta = filter(tetta, tettaLast, filterT);
-        gamma = filter(gamma, gammaLast, filterT);
+//        tetta = filter(tetta, tettaLast, filterT);
+//        gamma = filter(gamma, gammaLast, filterT);
         psy = filter(psy, psyLast, 10000);
 
         psy = Math.atan(matrixD[1][2] / matrixD[2][2]) * Math.PI * 180.0;
 
-        System.out.println(String.format("gamma:\t%f\ttetta\t%f\tpsy:\t%f", gamma, tetta, psy));
-        main.pitchLabel.setText(String.format("Тангаж: %f", tetta));
-        main.rollLabel.setText(String.format("Крен: %f", gamma));
+//        System.out.println(String.format("gamma:\t%f\ttetta\t%f\tpsy:\t%f", gamma, tetta, psy));
+//        main.pitchLabel.setText(String.format("Тангаж: %f", tetta));
+//        main.rollLabel.setText(String.format("Крен: %f", gamma));
 
 
-        main.pitchSeries.addOrUpdate(new Millisecond(new Date(time.getMillisecond()+7*i)), tetta);
-        main.rollSeries.addOrUpdate(new Millisecond(new Date(time.getMillisecond()+7*i)), gamma);
+//        main.pitchSeries.addOrUpdate(new Millisecond(new Date(time.getMillisecond()+7*i)), tetta);
+//        main.rollSeries.addOrUpdate(new Millisecond(new Date(time.getMillisecond()+7*i)), gamma);
 
-        gammaLast = gamma;
-        tettaLast = tetta;
-        psyLast = psy;
+//        gammaLast = gamma;
+//        tettaLast = tetta;
+//        psyLast = psy;
+
+
+        if(calibrationCounter > 2000) {
+
+            if (!isCalibrated){
+                isCalibrated = true;
+                gx0 = (int) - (gxSum / calibrationCounter);
+                gy0 = (int) - (gySum / calibrationCounter);
+                gz0 = (int) - (gzSum / calibrationCounter);
+                System.out.println(String.format("calibrated: %d, %d, %d", gx0, gy0, gz0));
+            }
+
+            System.out.println(String.format("gamma:\t%f\ttetta\t%f\tpsy:\t%f", gamma, tetta, psy));
+            main.pitchLabel.setText(String.format("Тангаж: %f", tetta));
+            main.rollLabel.setText(String.format("Крен: %f", gamma));
+
+            main.pitchSeries.addOrUpdate(new Millisecond(new Date(time.getMillisecond()+7*i)), tetta);
+            main.rollSeries.addOrUpdate(new Millisecond(new Date(time.getMillisecond()+7*i)), gamma);
+
+            gammaLast = gamma;
+            tettaLast = tetta;
+            psyLast = psy;
+
+            Main.pitch = tetta;
+            Main.roll = gamma;
+
+        } else {
+
+            calibrationCounter++;
+            gxSum += jsonObject.getInt("gx");
+            gySum += jsonObject.getInt("gy");
+            gzSum += jsonObject.getInt("gz");
+
+            axSum += jsonObject.getInt("ax");
+            aySum += jsonObject.getInt("ay");
+            azSum += jsonObject.getInt("az");
+
+        }
+
 
     }
 

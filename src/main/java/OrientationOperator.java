@@ -43,6 +43,14 @@ public class OrientationOperator {
     private double psyLast = 0.0;
     private double gainFilter = 1.0;
 
+    double lastAX = 0.0;
+    double lastAY = 0.0;
+    double lastAZ = 0.0;
+
+    double lastWX = 0.0;
+    double lastWY = 0.0;
+    double lastWZ = 0.0;
+
     public OrientationOperator(Main main) {
         matrixD = new double[4][4];
         matrixD[1][1] = 1.0;
@@ -60,30 +68,42 @@ public class OrientationOperator {
 
     public void addData(JSONObject jsonObject){
 
-        if(System.currentTimeMillis() - start > 2000) {
+
             num++;
 
-            if (!isCalibrated){
-                isCalibrated = true;
-                gx0 = (int) - (gxSum / calibrationCounter);
-                gy0 = (int) - (gySum / calibrationCounter);
-                gz0 = (int) - (gzSum / calibrationCounter);
-                System.out.println(String.format("calibrated: %d, %d, %d", gx0, gy0, gz0));
+            //calibrate
+            double wXR = jsonObject.getInt("gx");
+            double wYR = jsonObject.getInt("gy");
+            double wZR = jsonObject.getInt("gz");
 
-                int ax0 = (int) (axSum / calibrationCounter);
-                int ay0 = (int) (aySum / calibrationCounter);
-                int az0 = (int) (azSum / calibrationCounter);
+            wXR = filter(wXR, lastWX, filterT);
+            wYR = filter(wYR, lastWY, filterT);
+            wZR = filter(wZR, lastWZ, filterT);
 
-            }
+            lastWX = wXR;
+            lastWY = wYR;
+            lastWZ = wZR;
 
             //calibrate
-            double wx = ((jsonObject.getInt("gx") + gx0) / (1 + 0.031)) / constW;
-            double wy = (jsonObject.getInt("gy") + gy0) / (1 + 0.0034) / constW;
-            double wz = (jsonObject.getInt("gz") - gz0) / (1 + 0.013) / constW;
+            double wx = (0.9684 * ( wXR - gx0) + 0.0036 * (wYR - gy0) + 0.0299 * (wZR - gz0)) / constW;
+            double wy = (0.9965 * ( wYR - gy0) + 0.0110 * (wXR - gx0) + 0.0046 * (wZR - gz0)) / constW;
+            double wz = (0.9854 * ( wZR - gz0) - 0.0515 * (wXR - gx0) - 0.0304 * (wZR - gz0)) / constW;
 
-            double ax = ((jsonObject.getInt("ax") - 150) / (1 + 0.0479)) / constG * 9.81; // m/c^2  //547
-            double ay = ((jsonObject.getInt("ay") - 5) / (1 + 0.0022)) / constG * 9.81; // m/c^2
-            double az = ((jsonObject.getInt("az") + 662) / (1 + 0.0217)) / constG * 9.81; // m/c^2
+            double aXR = jsonObject.getInt("ax");
+            double aYR = jsonObject.getInt("ay");
+            double aZR = jsonObject.getInt("az");
+
+            aXR = filter(aXR, lastAX, filterT);
+            aYR = filter(aYR, lastAY, filterT);
+            aZR = filter(aZR, lastAZ, filterT);
+
+            lastAX = aXR;
+            lastAY = aYR;
+            lastAZ = aZR;
+
+            double ax = (0.9939 * ( aXR - 547.34) - 0.0113 * (aYR - 4.67  ) + 0.0346 * (aZR + 661.95) ) / constG * 9.81; // m/c^2  //547
+            double ay = (0.9977 * ( aYR - 4.67  ) + 0.0110 * (aXR - 547.34) - 0.0056 * (aZR + 661.95) ) / constG * 9.81; // m/c^2
+            double az = (0.9854 * ( aZR + 661.95) - 0.0324 * (aXR - 547.34) - 0.0040 * (aYR - 4.67  ) ) / constG * 9.81; // m/c^2
             //calibrated
 
             //body to local level
@@ -159,9 +179,19 @@ public class OrientationOperator {
             double gamma = -Math.atan(matrixD[3][1] / matrixD[3][3]) / Math.PI * 180.0;
             psy = Math.atan(matrixD[1][2] / matrixD[2][2]) * Math.PI * 180.0;
 
-            tetta = filter(tetta, tettaLast, filterT);
-            gamma = filter(gamma, gammaLast, filterT);
+//            tetta = filter(tetta, tettaLast, filterT);
+//            gamma = filter(gamma, gammaLast, filterT);
             psy = filter(psy, psyLast, 10000);
+
+        if(System.currentTimeMillis() - start > 2000) {
+
+            if (!isCalibrated){
+                isCalibrated = true;
+                gx0 = (int) - (gxSum / calibrationCounter);
+                gy0 = (int) - (gySum / calibrationCounter);
+                gz0 = (int) - (gzSum / calibrationCounter);
+                System.out.println(String.format("calibrated: %d, %d, %d", gx0, gy0, gz0));
+            }
 
             System.out.println(String.format("gamma:\t%f\ttetta\t%f\tpsy:\t%f", gamma, tetta, psy));
             main.pitchLabel.setText(String.format("Тангаж: %f", tetta));
@@ -176,6 +206,7 @@ public class OrientationOperator {
 
             Main.pitch = tetta;
             Main.roll = gamma;
+
         } else {
 
             calibrationCounter++;
